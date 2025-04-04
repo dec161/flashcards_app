@@ -9,7 +9,7 @@ class TranslatorApp:
         self.app_config = app_config
         self.root = root
         self.root.title("Переводчик")
-        self.root.geometry("400x300")
+        self.root.geometry("400x500")
         self.root.config(bg=self.app_config.primary_color)
         self.root.protocol("WM_DELETE_WINDOW", self.root.withdraw)
 
@@ -114,35 +114,57 @@ class TranslatorApp:
                                 master=self.root, app_config=self.app_config)
                 return
 
+            language_from_id = language_from_id[0]
             language_to_id = language_to_id[0]
 
-            # Получаем id слова на исходном языке и приводим к нижнему регистру
-            cursor.execute("SELECT id_word FROM Word WHERE LOWER(word)=?", (word,))  # Приводим слово из базы данных к нижнему регистру
-            word_id = cursor.fetchone()
-
-            if not word_id:
-                MessageBox.show(f"Слово '{word}' не найдено в базе данных!", "Ошибка",
+            cursor.execute("SELECT word FROM Word JOIN WordTranslation ON word_id = id_word WHERE LOWER(translation)=? AND language_id=?", (word, language_from_id))
+            english_word = cursor.fetchone()
+            if not english_word:
+                MessageBox.show(f"Слово '{word}' не найдено в базе данных языка {language_from}!", "Ошибка",
                                 master=self.root, app_config=self.app_config)
                 return
 
-            word_id = word_id[0]
+            english_word = english_word[0]
+
+            cursor.execute("SELECT translation FROM Word JOIN WordTranslation ON word_id = id_word WHERE LOWER(word)=? AND language_id=?", (english_word, language_to_id))
+            translated_word = cursor.fetchone()
+            if not translated_word:
+                MessageBox.show(f"Перевод слова '{word}' на язык {language_to} не найден в базе данных!", "Ошибка",
+                                master=self.root, app_config=self.app_config)
+                return
+            translated_word = translated_word[0]
+
+            # Получаем id слова на исходном языке и приводим к нижнему регистру
+            #cursor.execute("SELECT id_word FROM Word WHERE LOWER(word)=?", (word,))  # Приводим слово из базы данных к нижнему регистру
+            #word_id = cursor.fetchone()
+
+            #if not word_id:
+            #if not english_word_id:
+                #MessageBox.show(f"Слово '{word}' не найдено в базе данных!", "Ошибка",
+                                #master=self.root, app_config=self.app_config)
+                #return
+
+            #word_id = word_id[0]
 
             # Получаем перевод для слова с одного языка на другой
+            """
             cursor.execute(''' 
                 SELECT t.translation
                 FROM Translation t
                 WHERE t.word_id = ? AND t.language_id = ?
             ''', (word_id, language_to_id))
+            """
 
-            result = cursor.fetchone()
+            #result = cursor.fetchone()
             conn.close()
 
-            if result:
+            #if result:
                 # Применяем str.capitalize() для результата перевода
-                translated_word = result[0].capitalize()
-                self.result_label.config(text=f"Перевод: {translated_word}")
-            else:
-                self.result_label.config(text="Перевод не найден.")
+                #translated_word = result[0].capitalize()
+                #self.result_label.config(text=f"Перевод: {translated_word}")
+            #else:
+                #self.result_label.config(text="Перевод не найден.")
+            self.result_label.config(text=f"Перевод: {translated_word}")
 
         except Exception as e:
             MessageBox.show(f"Ошибка при переводе: {e}", "Ошибка",
